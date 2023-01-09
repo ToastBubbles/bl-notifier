@@ -1,13 +1,26 @@
+import colors from "./data.js";
 let iteration = 0;
+
 const parts = [
   {
     itemId: 264,
     wantedColors: [62, 32],
+    partNum: 3001,
+    partNom: "Brick 2x4",
   },
   {
     itemId: 777,
     wantedColors: [83, 2],
+    partNum: 3024,
+    partNum: 4073,
+    partNom: "Plate, Round 1x1",
   },
+  // {
+  //   itemId: ,
+  //   wantedColors: [83, 2],
+  //   partNum: 3024,
+  //   partNom: 'Plate 1x1'
+  // },
 ];
 
 const https = require("https");
@@ -56,11 +69,14 @@ const sleep = (time) => {
 };
 
 const checkParts = async () => {
+  let date = new Date();
+  var datetime = date.toLocaleString();
+  iteration++;
+  console.log(`iteration: ${iteration} (${datetime})`);
   for (let l = 0; l < parts.length; l++) {
     for (let i = 0; i < parts[l].wantedColors.length; i++) {
       await sleep(5000);
-      iteration++;
-      console.log(iteration);
+      console.log(colors.find((x) => x.id == parts[l].wantedColors[i]).BLName);
       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
     }
   }
