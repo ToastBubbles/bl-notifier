@@ -95,4 +95,20 @@ const checkParts = async () => {
   checkParts();
 };
 
+function displayTrackedParts() {
+  let str = "";
+  //let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
+  //let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
+  for (let l = 0; l < parts.length; l++) {
+    str += `${parts[l].partNom}:\n`;
+    for (let i = 0; i < parts[l].wantedColors.length; i++) {
+      str += `|   ${
+        c.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName
+      }\n`;
+    }
+  }
+  console.log(str);
+}
+
+displayTrackedParts();
 checkParts();
