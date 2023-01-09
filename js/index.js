@@ -22,6 +22,12 @@ const parts = [
     partNum: 3024,
     partNom: "Plate 1x1",
   },
+  {
+    itemId: 378,
+    wantedColors: [21, 87],
+    partNum: 3023,
+    partNom: "Plate 1x2",
+  },
 ];
 
 const https = require("https");
