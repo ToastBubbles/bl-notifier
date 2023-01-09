@@ -5,7 +5,7 @@ let iteration = 0;
 const parts = [
   {
     itemId: 264,
-    wantedColors: [13, 32, 233, 228],
+    wantedColors: [13, 32, 108, 220, 228],
     partNum: 3001,
     partNom: "Brick 2x4",
   },
@@ -16,12 +16,12 @@ const parts = [
     partNum: 4073,
     partNom: "Plate, Round 1x1",
   },
-  // {
-  //   itemId: ,
-  //   wantedColors: [83, 2],
-  //   partNum: 3024,
-  //   partNom: 'Plate 1x1'
-  // },
+  {
+    itemId: 381,
+    wantedColors: [58],
+    partNum: 3024,
+    partNom: "Plate 1x1",
+  },
 ];
 
 const https = require("https");
