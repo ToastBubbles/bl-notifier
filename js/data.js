@@ -4479,4 +4479,5 @@ let colors = [
   ...a11,
   ...a12,
 ];
-export default colors;
+exports.colors = colors;
+// export default colors;

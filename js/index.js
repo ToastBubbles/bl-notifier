@@ -1,16 +1,17 @@
-import colors from "./data.js";
+// import colors from "./data.js";
+const c = require("./data");
 let iteration = 0;
 
 const parts = [
   {
     itemId: 264,
-    wantedColors: [62, 32],
+    wantedColors: [13, 32, 233, 228],
     partNum: 3001,
     partNom: "Brick 2x4",
   },
   {
     itemId: 777,
-    wantedColors: [83, 2],
+    wantedColors: [228],
     partNum: 3024,
     partNum: 4073,
     partNom: "Plate, Round 1x1",
@@ -38,10 +39,12 @@ function getAvail(partId, colorId) {
 
         // The whole response has been received. Print out the result.
         resp.on("end", () => {
+          let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
+          let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
           console.log(
             (JSON.parse(data).total_count &&
-              `Brick id:${partId} in color id:${colorId} is available`) ||
-              `Brick id:${partId} in color id:${colorId} is NOT available`
+              `${tempColorNom} - ${tempPartNom} is available!!`) ||
+              `${tempColorNom} - ${tempPartNom} is NOT available`
           );
         });
       }
@@ -76,7 +79,9 @@ const checkParts = async () => {
   for (let l = 0; l < parts.length; l++) {
     for (let i = 0; i < parts[l].wantedColors.length; i++) {
       await sleep(5000);
-      console.log(colors.find((x) => x.id == parts[l].wantedColors[i]).BLName);
+      // let tempColorNom =
+      //   colors.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName;
+
       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
     }
   }
