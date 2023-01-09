@@ -97,6 +97,7 @@ function displayTrackedParts() {
   for (let l = 0; l < parts.length; l++) {
     if (l === 0) {
       str += `╒`;
+      //╕╡┤
     } else {
       str += `╞`;
     }
