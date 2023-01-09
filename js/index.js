@@ -1,5 +1,5 @@
 // import colors from "./data.js";
-const c = require("./data");
+const c = require("./data"); //reference to color array in data.js
 let iteration = 0;
 
 const parts = [
@@ -85,9 +85,6 @@ const checkParts = async () => {
   for (let l = 0; l < parts.length; l++) {
     for (let i = 0; i < parts[l].wantedColors.length; i++) {
       await sleep(5000);
-      // let tempColorNom =
-      //   colors.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName;
-
       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
     }
   }
@@ -97,17 +94,20 @@ const checkParts = async () => {
 
 function displayTrackedParts() {
   let str = "";
-  //let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
-  //let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
   for (let l = 0; l < parts.length; l++) {
-    str += `--------------------------\n| ${parts[l].partNom}:\n--------------------------\n`;
+    if (l === 0) {
+      str += `╒`;
+    } else {
+      str += `╞`;
+    }
+    str += `═══════════════════════════\n│ ${parts[l].partNom}:\n├───────────────────────────\n`;
     for (let i = 0; i < parts[l].wantedColors.length; i++) {
-      str += `| - ${
+      str += `│ - ${
         c.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName
       }\n`;
     }
   }
-  str += `--------------------------`;
+  str += `╘═══════════════════════════`;
   console.log(str);
 }
 
