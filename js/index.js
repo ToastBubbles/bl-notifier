@@ -1,34 +1,15 @@
-// import colors from "./data.js";
 const c = require("./data"); //reference to color array in data.js
 const headers = require("./headers");
-let iteration = 0;
+// easyvpn -c US;
+let iteration = 1;
 
 var cron = require("node-cron");
-
+let delay = 0;
 cron.schedule("39 19 * * *", () => {
   displayTrackedParts();
 });
 
 const softParts = [
-  // {
-  //   itemId: 264,
-  //   wantedColors: [13, 32, 108, 220, 228],
-  //   partNum: 3001,
-  //   partNom: "Brick 2x4",
-  // },
-  // {
-  //   itemId: 777,
-  //   wantedColors: [228],
-  //   partNum: 3024,
-  //   partNum: 4073,
-  //   partNom: "Plate, Round 1x1",
-  // },
-  // {
-  //   itemId: 381,
-  //   wantedColors: [58],
-  //   partNum: 3024,
-  //   partNom: "Plate 1x1",
-  // },
   {
     itemId: 378,
     wantedColors: [87],
@@ -36,10 +17,11 @@ const softParts = [
     partNom: "Plate 1x2",
   },
 ];
+
 const parts = [
   {
     itemId: 264,
-    wantedColors: [13, 32, 108, 220, 228, 1],
+    wantedColors: [13, 32, 108, 220, 228],
     partNum: 3001,
     partNom: "Brick 2x4",
   },
@@ -58,7 +40,7 @@ const parts = [
   },
   {
     itemId: 378,
-    wantedColors: [21, 87],
+    wantedColors: [21],
     partNum: 3023,
     partNom: "Plate 1x2",
   },
@@ -76,20 +58,27 @@ parts.forEach((part) => {
 const https = require("https");
 const { off } = require("process");
 
-cron.schedule("*/5 * * * *", () => {
+cron.schedule("*/10 * * * *", () => {
+  console.log(`iteration ${iteration}`);
   Promise.all(
     arrayOfData.map(({ brickId, colorId }, index) => {
       return getAvail(brickId, colorId, index);
     })
   ).then((AllData) => {
+    delay = 0;
     const aviliableBricks = AllData.filter((brickData) => brickData.canBuy);
-    let availStr = "";
-    for (let l = 0; l < aviliableBricks.length; l++) {
-      availStr += `${
-        parts.find((x) => x.itemId == aviliableBricks[l].partId).partNom
-      } ${c.colors.find((x) => x.id == aviliableBricks[l].colorId).BLName}\n`;
+    if (aviliableBricks.length > 0) {
+      let availStr = "";
+      for (let l = 0; l < aviliableBricks.length; l++) {
+        availStr += `${
+          parts.find((x) => x.itemId == aviliableBricks[l].partId).partNom
+        } ${c.colors.find((x) => x.id == aviliableBricks[l].colorId).BLName}\n`;
+      }
+      console.log("You can buy these bricks:\n" + availStr);
+    } else {
+      console.log("No new parts.");
     }
-    console.log("You can buy these bricks:\n" + availStr);
+    iteration++;
     // console.log(
 
     //   "You can buy these bricks",
@@ -97,25 +86,18 @@ cron.schedule("*/5 * * * *", () => {
     // );
   });
 });
+
 async function getAvail(partId, colorId, offset) {
-  let delay = 0;
   return new Promise((resolve, reject) => {
     try {
       const options = {
         host: `www.bricklink.com`,
         path: `/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
-        //hostname: `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
-        //port: 443,
-        //path: "/",
-        //method: "GET",
-        // /path: "/get",
         headers: {
-          //Authorization: 'authKey'
           "User-Agent": generateHeader(),
         },
       };
-      delay += (offset + 1) * randDelay();
-      //console.log(delay + " is delay\n" + offset + " is offset");
+      delay += randDelay();
       setTimeout(() => {
         https
           .get(
@@ -123,7 +105,7 @@ async function getAvail(partId, colorId, offset) {
             //`https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
             (resp) => {
               console.log(
-                `Checking for part ${partId} with color ${colorId} at ${new Date().toISOString()} got status code of ${
+                `Checking for part ${partId} with color ${colorId} at ${new Date().toLocaleString()} got status code of ${
                   resp.statusCode
                 }`
               );
@@ -170,67 +152,6 @@ function randDelay() {
   let min = 10000;
   return Math.round(Math.random() * (max - min) + min);
 }
-////////////////////
-// const https = require("https");
-// function getAvail(partId, colorId) {
-//   https
-//     .get(
-//       `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
-//       (resp) => {
-//         let data = "";
-
-//         // A chunk of data has been received.
-//         resp.on("data", (chunk) => {
-//           data += chunk;
-//         });
-
-//         // The whole response has been received. Print out the result.
-//         resp.on("end", () => {
-//           let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
-//           let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
-//           console.log(
-//             (JSON.parse(data).total_count &&
-//               `${tempColorNom} - ${tempPartNom} is available!!`) ||
-//               `${tempColorNom} - ${tempPartNom} is NOT available`
-//           );
-//         });
-//       }
-//     )
-//     .on("error", (err) => {
-//       console.log("Error: " + err.message);
-//     });
-// }
-
-// function checkParts() {
-//   parts.forEach((e) => {
-//     for (let i = 0; i < e.wantedColors.length; i++) {
-//       // setInterval(function () {
-//       getAvail(e.itemId, e.wantedColors[i]);
-//       // }, 2000);
-//     }
-//   });
-//   // setInterval(function () {
-//   //   checkParts();
-//   // }, 2000);
-// }
-/////////////////////////////////////////////////////////////////////////
-// const sleep = (time) => {
-//   return new Promise((resolve) => setTimeout(resolve, time));
-// };
-
-// const checkParts = async () => {
-//   let date = new Date();
-//   var datetime = date.toLocaleString();
-//   iteration++;
-//   console.log(`iteration: ${iteration} (${datetime})`);
-//   for (let l = 0; l < parts.length; l++) {
-//     for (let i = 0; i < parts[l].wantedColors.length; i++) {
-//       await sleep(5000);
-//       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
-//     }
-//   }
-//   //await sleep(42000); //7 min is 420000
-// };
 
 function displayTrackedParts() {
   let str = "";
