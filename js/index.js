@@ -39,7 +39,7 @@ const softParts = [
 const parts = [
   {
     itemId: 264,
-    wantedColors: [13, 32, 108, 220, 228],
+    wantedColors: [13, 32, 108, 220, 228, 1],
     partNum: 3001,
     partNom: "Brick 2x4",
   },
@@ -74,26 +74,53 @@ parts.forEach((part) => {
 
 ////////////////////////
 const https = require("https");
-/*
-Promise.all(
-  arrayOfData.map(({ brickId, colorId }, index) => {
-    return getAvail(brickId, colorId, index);
-  })
-).then((AllData) => {
-  const aviliableBricks = AllData.filter((brickData) => brickData.canBuy);
-  console.log(
-    "You can buy these bricks",
-    aviliableBricks.map(({ partId, colorId }) => ({ partId, colorId }))
-  );
-});
+const { off } = require("process");
 
+cron.schedule("*/5 * * * *", () => {
+  Promise.all(
+    arrayOfData.map(({ brickId, colorId }, index) => {
+      return getAvail(brickId, colorId, index);
+    })
+  ).then((AllData) => {
+    const aviliableBricks = AllData.filter((brickData) => brickData.canBuy);
+    let availStr = "";
+    for (let l = 0; l < aviliableBricks.length; l++) {
+      availStr += `${
+        parts.find((x) => x.itemId == aviliableBricks[l].partId).partNom
+      } ${c.colors.find((x) => x.id == aviliableBricks[l].colorId).BLName}\n`;
+    }
+    console.log("You can buy these bricks:\n" + availStr);
+    // console.log(
+
+    //   "You can buy these bricks",
+    //   aviliableBricks.map(({ partId, colorId }) => ({ partId, colorId }))
+    // );
+  });
+});
 async function getAvail(partId, colorId, offset) {
+  let delay = 0;
   return new Promise((resolve, reject) => {
     try {
+      const options = {
+        host: `www.bricklink.com`,
+        path: `/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+        //hostname: `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+        //port: 443,
+        //path: "/",
+        //method: "GET",
+        // /path: "/get",
+        headers: {
+          //Authorization: 'authKey'
+          "User-Agent": generateHeader(),
+        },
+      };
+      delay += (offset + 1) * randDelay();
+      //console.log(delay + " is delay\n" + offset + " is offset");
       setTimeout(() => {
         https
           .get(
-            `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+            options,
+            //`https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
             (resp) => {
               console.log(
                 `Checking for part ${partId} with color ${colorId} at ${new Date().toISOString()} got status code of ${
@@ -108,7 +135,7 @@ async function getAvail(partId, colorId, offset) {
               resp.on("end", () => {
                 // let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
                 // let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
-                console.log("look at this", data);
+                //console.log("look at this", data);
 
                 if (data === "") {
                   throw "empty string";
@@ -128,15 +155,20 @@ async function getAvail(partId, colorId, offset) {
             console.log(err);
             reject("Error: " + err.message);
           });
-      }, offset * 5000);
+      }, delay);
     } catch (err) {
       console.log("oops", err);
       reject("Somethings Wrong...");
     }
   });
-}*/
+}
 function generateHeader() {
   return headers.heads[Math.round(Math.random() * (headers.heads.length - 1))];
+}
+function randDelay() {
+  let max = 32000;
+  let min = 10000;
+  return Math.round(Math.random() * (max - min) + min);
 }
 ////////////////////
 // const https = require("https");
@@ -222,9 +254,9 @@ function displayTrackedParts() {
 
 displayTrackedParts();
 
-for (let i = 0; i < 10; i++) {
-  console.log(generateHeader());
-}
+// for (let i = 0; i < 10; i++) {
+//   console.log(generateHeader());
+// }
 
 // checkParts();
 // cron.schedule("*/7 * * * *", () => {
