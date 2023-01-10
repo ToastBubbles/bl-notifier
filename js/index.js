@@ -1,5 +1,6 @@
 // import colors from "./data.js";
 const c = require("./data"); //reference to color array in data.js
+const headers = require("./headers");
 let iteration = 0;
 
 var cron = require("node-cron");
@@ -57,41 +58,116 @@ const parts = [
   },
   {
     itemId: 378,
-    wantedColors: [21],
+    wantedColors: [21, 87],
     partNum: 3023,
     partNom: "Plate 1x2",
   },
 ];
 
+let arrayOfData = [];
+
+parts.forEach((part) => {
+  part.wantedColors.forEach((color) =>
+    arrayOfData.push({ brickId: part.itemId, colorId: color })
+  );
+});
+
+////////////////////////
 const https = require("https");
-function getAvail(partId, colorId) {
-  https
-    .get(
-      `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
-      (resp) => {
-        let data = "";
+/*
+Promise.all(
+  arrayOfData.map(({ brickId, colorId }, index) => {
+    return getAvail(brickId, colorId, index);
+  })
+).then((AllData) => {
+  const aviliableBricks = AllData.filter((brickData) => brickData.canBuy);
+  console.log(
+    "You can buy these bricks",
+    aviliableBricks.map(({ partId, colorId }) => ({ partId, colorId }))
+  );
+});
 
-        // A chunk of data has been received.
-        resp.on("data", (chunk) => {
-          data += chunk;
-        });
+async function getAvail(partId, colorId, offset) {
+  return new Promise((resolve, reject) => {
+    try {
+      setTimeout(() => {
+        https
+          .get(
+            `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+            (resp) => {
+              console.log(
+                `Checking for part ${partId} with color ${colorId} at ${new Date().toISOString()} got status code of ${
+                  resp.statusCode
+                }`
+              );
 
-        // The whole response has been received. Print out the result.
-        resp.on("end", () => {
-          let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
-          let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
-          console.log(
-            (JSON.parse(data).total_count &&
-              `${tempColorNom} - ${tempPartNom} is available!!`) ||
-              `${tempColorNom} - ${tempPartNom} is NOT available`
-          );
-        });
-      }
-    )
-    .on("error", (err) => {
-      console.log("Error: " + err.message);
-    });
+              let data = "";
+              resp.on("data", (chunk) => {
+                data += chunk;
+              });
+              resp.on("end", () => {
+                // let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
+                // let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
+                console.log("look at this", data);
+
+                if (data === "") {
+                  throw "empty string";
+                }
+
+                const dataToDisplay = {
+                  partId,
+                  colorId,
+                  canBuy: JSON.parse(data).total_count !== 0,
+                };
+
+                resolve(dataToDisplay);
+              });
+            }
+          )
+          .on("error", (err) => {
+            console.log(err);
+            reject("Error: " + err.message);
+          });
+      }, offset * 5000);
+    } catch (err) {
+      console.log("oops", err);
+      reject("Somethings Wrong...");
+    }
+  });
+}*/
+function generateHeader() {
+  return headers.heads[Math.round(Math.random() * (headers.heads.length - 1))];
 }
+////////////////////
+// const https = require("https");
+// function getAvail(partId, colorId) {
+//   https
+//     .get(
+//       `https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+//       (resp) => {
+//         let data = "";
+
+//         // A chunk of data has been received.
+//         resp.on("data", (chunk) => {
+//           data += chunk;
+//         });
+
+//         // The whole response has been received. Print out the result.
+//         resp.on("end", () => {
+//           let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
+//           let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
+//           console.log(
+//             (JSON.parse(data).total_count &&
+//               `${tempColorNom} - ${tempPartNom} is available!!`) ||
+//               `${tempColorNom} - ${tempPartNom} is NOT available`
+//           );
+//         });
+//       }
+//     )
+//     .on("error", (err) => {
+//       console.log("Error: " + err.message);
+//     });
+// }
 
 // function checkParts() {
 //   parts.forEach((e) => {
@@ -105,24 +181,24 @@ function getAvail(partId, colorId) {
 //   //   checkParts();
 //   // }, 2000);
 // }
+/////////////////////////////////////////////////////////////////////////
+// const sleep = (time) => {
+//   return new Promise((resolve) => setTimeout(resolve, time));
+// };
 
-const sleep = (time) => {
-  return new Promise((resolve) => setTimeout(resolve, time));
-};
-
-const checkParts = async () => {
-  let date = new Date();
-  var datetime = date.toLocaleString();
-  iteration++;
-  console.log(`iteration: ${iteration} (${datetime})`);
-  for (let l = 0; l < parts.length; l++) {
-    for (let i = 0; i < parts[l].wantedColors.length; i++) {
-      await sleep(5000);
-      getAvail(parts[l].itemId, parts[l].wantedColors[i]);
-    }
-  }
-  //await sleep(42000); //7 min is 420000
-};
+// const checkParts = async () => {
+//   let date = new Date();
+//   var datetime = date.toLocaleString();
+//   iteration++;
+//   console.log(`iteration: ${iteration} (${datetime})`);
+//   for (let l = 0; l < parts.length; l++) {
+//     for (let i = 0; i < parts[l].wantedColors.length; i++) {
+//       await sleep(5000);
+//       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
+//     }
+//   }
+//   //await sleep(42000); //7 min is 420000
+// };
 
 function displayTrackedParts() {
   let str = "";
@@ -145,7 +221,12 @@ function displayTrackedParts() {
 }
 
 displayTrackedParts();
+
+for (let i = 0; i < 10; i++) {
+  console.log(generateHeader());
+}
+
 // checkParts();
-cron.schedule("*/7 * * * *", () => {
-  checkParts();
-});
+// cron.schedule("*/7 * * * *", () => {
+//   checkParts();
+// });
