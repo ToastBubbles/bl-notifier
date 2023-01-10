@@ -2,6 +2,39 @@
 const c = require("./data"); //reference to color array in data.js
 let iteration = 0;
 
+var cron = require("node-cron");
+
+cron.schedule("39 19 * * *", () => {
+  displayTrackedParts();
+});
+
+const softParts = [
+  // {
+  //   itemId: 264,
+  //   wantedColors: [13, 32, 108, 220, 228],
+  //   partNum: 3001,
+  //   partNom: "Brick 2x4",
+  // },
+  // {
+  //   itemId: 777,
+  //   wantedColors: [228],
+  //   partNum: 3024,
+  //   partNum: 4073,
+  //   partNom: "Plate, Round 1x1",
+  // },
+  // {
+  //   itemId: 381,
+  //   wantedColors: [58],
+  //   partNum: 3024,
+  //   partNom: "Plate 1x1",
+  // },
+  {
+    itemId: 378,
+    wantedColors: [87],
+    partNum: 3023,
+    partNom: "Plate 1x2",
+  },
+];
 const parts = [
   {
     itemId: 264,
@@ -24,7 +57,7 @@ const parts = [
   },
   {
     itemId: 378,
-    wantedColors: [21, 87],
+    wantedColors: [21],
     partNum: 3023,
     partNom: "Plate 1x2",
   },
@@ -88,8 +121,7 @@ const checkParts = async () => {
       getAvail(parts[l].itemId, parts[l].wantedColors[i]);
     }
   }
-  await sleep(42000); //7 min is 420000
-  checkParts();
+  //await sleep(42000); //7 min is 420000
 };
 
 function displayTrackedParts() {
@@ -113,4 +145,7 @@ function displayTrackedParts() {
 }
 
 displayTrackedParts();
-checkParts();
+// checkParts();
+cron.schedule("*/7 * * * *", () => {
+  checkParts();
+});
