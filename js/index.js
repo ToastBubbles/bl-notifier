@@ -1,12 +1,24 @@
 const c = require("./data"); //reference to color array in data.js
 const headers = require("./headers");
-// easyvpn -c US;
+const { exec } = require('child_process');
+
+//curl ifconfig.me
+const myIP = ''
 let iteration = 1;
+
+let errorCount = 0;
+let bricksFound = 0;
 
 var cron = require("node-cron");
 let delay = 0;
-cron.schedule("39 19 * * *", () => {
-  displayTrackedParts();
+cron.schedule("0 7 * * *", () => {
+  // displayTrackedParts();
+  makeAnnounment(`Good morning, I found ${bricksFound}  new bricks. ${errorCount} errors to report. ${iteration} iterations completed.`, true);
+  setTimeout(() => {
+    errorCount = 0;
+    iteration = 0;
+    bricksFound = 0;
+  }, 10000)
 });
 
 const softParts = [
@@ -44,7 +56,16 @@ const parts = [
     partNum: 3023,
     partNom: "Plate 1x2",
   },
+
 ];
+
+
+const ovpnDir = './ovpns/us/';
+const fs = require('fs');
+
+const ovpns = fs.readdirSync(ovpnDir);
+
+
 
 let arrayOfData = [];
 
@@ -54,11 +75,24 @@ parts.forEach((part) => {
   );
 });
 
+function cullFoundParts(partArr) {//removes found parts from array after announced
+  //console.log(partArr)
+  //console.log(arrayOfData);
+  partArr.forEach((part) => {
+    const index = arrayOfData.findIndex(x => x.brickId === part.partId && x.colorId === part.colorId);
+    if (index > -1) { // only splice array when item is found
+      arrayOfData.splice(index, 1); // 2nd parameter means remove one item only
+    }
+
+  })
+  // console.log(arrayOfData);
+}
+
 ////////////////////////
 const https = require("https");
-const { off } = require("process");
+// const { off } = require("process");
 
-cron.schedule("*/10 * * * *", () => {
+cron.schedule("*/8 * * * *", () => {
   console.log(`iteration ${iteration}`);
   Promise.all(
     arrayOfData.map(({ brickId, colorId }, index) => {
@@ -70,11 +104,17 @@ cron.schedule("*/10 * * * *", () => {
     if (aviliableBricks.length > 0) {
       let availStr = "";
       for (let l = 0; l < aviliableBricks.length; l++) {
-        availStr += `${
-          parts.find((x) => x.itemId == aviliableBricks[l].partId).partNom
-        } ${c.colors.find((x) => x.id == aviliableBricks[l].colorId).BLName}\n`;
+        availStr += `${parts.find((x) => x.itemId == aviliableBricks[l].partId).partNom
+          } ${c.colors.find((x) => x.id == aviliableBricks[l].colorId).BLName}\n`;
       }
       console.log("You can buy these bricks:\n" + availStr);
+      makeAnnounment("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+
+      setTimeout(() => {
+        makeAnnounment("You can buy these bricks: " + availStr, true)
+      }, 10000)
+      cullFoundParts(aviliableBricks);
+
     } else {
       console.log("No new parts.");
     }
@@ -87,7 +127,9 @@ cron.schedule("*/10 * * * *", () => {
   });
 });
 
-async function getAvail(partId, colorId, offset) {
+
+
+async function getAvail(partId, colorId) {
   return new Promise((resolve, reject) => {
     try {
       const options = {
@@ -99,44 +141,63 @@ async function getAvail(partId, colorId, offset) {
       };
       delay += randDelay();
       setTimeout(() => {
-        https
-          .get(
-            options,
-            //`https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
-            (resp) => {
-              console.log(
-                `Checking for part ${partId} with color ${colorId} at ${new Date().toLocaleString()} got status code of ${
-                  resp.statusCode
-                }`
-              );
 
-              let data = "";
-              resp.on("data", (chunk) => {
-                data += chunk;
-              });
-              resp.on("end", () => {
-                // let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
-                // let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
-                //console.log("look at this", data);
+        checkMyIP().then((isMyIP) => {
+          if (isMyIP) {
+            switchIP().then(() => {
+              console.log("VPN switched.")
+              resolve(getAvail(partId, colorId))
+            })
+          }
+          https
+            .get(
+              options,
+              //`https://www.bricklink.com/ajax/clone/catalogifs.ajax?itemid=${partId}&color=${colorId}&iconly=0`,
+              (resp) => {
+                console.log(
+                  `Checking for part ${partId} with color ${colorId} at ${new Date().toLocaleString()} got status code of ${resp.statusCode
+                  }`
+                );
+                if (resp.statusCode == 200) {
 
-                if (data === "") {
-                  throw "empty string";
+                  let data = "";
+                  resp.on("data", (chunk) => {
+                    data += chunk;
+                  });
+                  resp.on("end", () => {
+                    // let tempPartNom = parts.find((v) => v.itemId == partId).partNom;
+                    // let tempColorNom = c.colors.find((x) => x.id == colorId).BLName;
+                    //console.log("look at this", data);
+
+                    if (data === "") {
+                      throw "empty string";
+                    }
+
+                    const dataToDisplay = {
+                      partId,
+                      colorId,
+                      canBuy: JSON.parse(data).total_count !== 0,
+                    };
+
+                    resolve(dataToDisplay);
+
+                  });
+                } else if (resp.statusCode == 403) {
+                  makeAnnounment(`${resp.statusCode} Error`);
+                  errorCount++;
+                  switchIP();
+                } else {
+                  makeAnnounment(`${resp.statusCode} Error`);
                 }
+              }
+            )
+            .on("error", (err) => {
+              console.log(err);
+              reject("Error: " + err.message);
+            });
+        })
 
-                const dataToDisplay = {
-                  partId,
-                  colorId,
-                  canBuy: JSON.parse(data).total_count !== 0,
-                };
 
-                resolve(dataToDisplay);
-              });
-            }
-          )
-          .on("error", (err) => {
-            console.log(err);
-            reject("Error: " + err.message);
-          });
       }, delay);
     } catch (err) {
       console.log("oops", err);
@@ -154,6 +215,8 @@ function randDelay() {
 }
 
 function displayTrackedParts() {
+  // makeAnnounment("aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou aeiou.");
+  makeAnnounment("Application started.");
   let str = "";
   for (let l = 0; l < parts.length; l++) {
     if (l === 0) {
@@ -164,22 +227,127 @@ function displayTrackedParts() {
     }
     str += `═══════════════════════════\n│ ${parts[l].partNom}:\n├───────────────────────────\n`;
     for (let i = 0; i < parts[l].wantedColors.length; i++) {
-      str += `│ - ${
-        c.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName
-      }\n`;
+      str += `│ - ${c.colors.find((x) => x.id == parts[l].wantedColors[i]).BLName
+        }\n`;
     }
   }
   str += `╘═══════════════════════════`;
   console.log(str);
 }
 
+function makeAnnounment(str, slow = false) {
+  exec(`espeak -s ${slow ? 100 : 175} "${str}"`, (err, output) => {
+    // once the command has completed, the callback function is called
+    if (err) {
+      // log and return if we encounter an error
+      console.error("could not execute command: ", err)
+      return
+    }
+    // log the output received from the command
+    //console.log("Output: \n", output)
+  })
+
+}
+
+
+let vpnIndex = 0;
+
+async function switchIP() {
+
+  return new Promise((resolve) => {
+
+    console.log("Attempting to switch VPN IP")
+
+    if (vpnIndex < ovpns.length - 1) {
+      vpnIndex++;
+    } else {
+      vpnIndex = 0;
+    }
+    exec(`sudo killall openvpn`, (err, output) => {
+      // once the command has completed, the callback function is called
+      if (err) {
+        // log and return if we encounter an error
+        console.error("could not execute command: ", err)
+        return
+      }
+      // log the output received from the command
+      console.log("Current VPN Shut Down")
+      // console.log("output: \n", output)
+    })
+    console.log("Waiting 5 seconds to continue...")
+    setTimeout(() => {
+
+      console.log("attempting to connect to differnt VPN IP")
+
+      exec(`sudo -b openvpn ./ovpns/us/${ovpns[vpnIndex]}`, (err, output) => {
+        // once the command has completed, the callback function is called
+        if (err) {
+          // log and return if we encounter an error
+          console.error("could not execute command: ", err)
+          return
+        }
+        // log the output received from the command
+        // console.log("ovpn: \n", ovpns[vpnIndex], "output: \n", output)
+
+        console.log("VPN switched to " + ovpns[vpnIndex] + ", waiting 8 secs...")
+
+        setTimeout(() => resolve(), 8000)
+
+      })
+
+    }, 5000)
+
+  })
+
+}
+
+const http = require('http');
+
+async function checkMyIP() {
+
+  console.log("Checking if personal IP is exposed");
+
+  return new Promise((resolve) => {
+
+    // Set the URL of the request to the ipify API
+    const httpoptions = {
+      host: 'api.ipify.org',
+      port: 80,
+      path: '/?format=json'
+    };
+
+    // Create a new http.ClientRequest object
+    const req = http.request(httpoptions, (res) => {
+      // Set the response encoding to utf8
+      res.setEncoding('utf8');
+
+      // When a chunk of data is received, append it to the body
+      let body = '';
+      res.on('data', (chunk) => {
+        body += chunk;
+      });
+
+      // When the response completes, parse the JSON and log the IP address
+      res.on('end', () => {
+        const data = JSON.parse(body);
+        // if(data.ip == myIP){
+
+        data.ip == myIP && console.log("Personal IP is exposed")
+        resolve(data.ip == myIP)
+
+        //console.log(data.ip);
+      });
+    });
+
+
+    // Send the request
+    req.end();
+
+  })
+
+}
+
+
 displayTrackedParts();
 
-// for (let i = 0; i < 10; i++) {
-//   console.log(generateHeader());
-// }
 
-// checkParts();
-// cron.schedule("*/7 * * * *", () => {
-//   checkParts();
-// });
