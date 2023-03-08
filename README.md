@@ -11,8 +11,8 @@ Additional features:
 -SendGrid incorporation allows emails to be sent when desired data is found.
 
 -Includes three modes:
-  -Look for any object at all
-  -Track certain objects by ID and only update upon new listing
-  -Track certain objects by ID and only update upon new listing with an attached comment
+ - Look for any object at all
+ - Track certain objects by ID and only update upon new listing
+ - Track certain objects by ID and only update upon new listing with an attached comment
   
   
